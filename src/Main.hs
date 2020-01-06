@@ -45,12 +45,12 @@ render game =
     debugtext = color white $ text $ (show (shipCoords game))
 
 moveShip :: Float -> HaskeroidsGame -> HaskeroidsGame
-moveShip secs game = game {shipCoords = checkPos (x',y')}
+moveShip secs game = game {shipCoords = (x',y')}
   where
     (x, y) = shipCoords game -- Old coordinates
     (vx, vy) = shipVel game -- Speed of ship
-    x' = (x + vx) * secs 
-    y' = (y + vy) * secs
+    x' = x + vx * secs 
+    y' = y + vy * secs
     checkPos :: (Float, Float) -> (Float, Float)
     checkPos (x, y) = ((x `mod'` (fromIntegral boardWidth)),(y `mod'` (fromIntegral boardHeight))) 
 
@@ -79,12 +79,12 @@ accShip (x, y) r = (x + accAmount * (sin (fromDeg r)), y + accAmount * (cos (fro
 
 update :: Float -> HaskeroidsGame -> HaskeroidsGame
 update secs game
-  | (acc game) && (turnLeft game) = game { shipCoords = accShip (shipCoords game) (shipRot game), shipRot = (((shipRot game)-rotAmount) `mod'` 360)}
-  | (acc game) && (turnRight game) = game { shipCoords = accShip (shipCoords game) (shipRot game), shipRot = (((shipRot game)+rotAmount) `mod'` 360)}
-  | acc game = game { shipCoords = accShip (shipCoords game) (shipRot game)}
-  | turnLeft game = game { shipRot = (((shipRot game)-rotAmount) `mod'` 360) }
-  | turnRight game = game { shipRot = (((shipRot game)+rotAmount) `mod'` 360) }
-  | otherwise = game
+  | (acc game) && (turnLeft game) = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game), shipRot = (((shipRot game)-rotAmount) `mod'` 360)}
+  | (acc game) && (turnRight game) = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game), shipRot = (((shipRot game)+rotAmount) `mod'` 360)}
+  | acc game = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game)}
+  | turnLeft game = moveShip secs $ game { shipRot = (((shipRot game)-rotAmount) `mod'` 360) }
+  | turnRight game = moveShip secs $ game { shipRot = (((shipRot game)+rotAmount) `mod'` 360) }
+  | otherwise = moveShip secs $ game
 
 handleKeys :: Event -> HaskeroidsGame -> HaskeroidsGame
 handleKeys (EventKey (SpecialKey KeyUp) Down _ _) game = game {acc = True }
