@@ -4,12 +4,13 @@ import Graphics.Gloss
 import Graphics.Gloss.Data.ViewPort (ViewPort)
 import Graphics.Gloss.Interface.Pure.Game
 import qualified Data.Set as S
+import Data.Fixed
 
 boardWidth :: Int
-boardWidth = 1000
+boardWidth = 1920
 
 boardHeight :: Int
-boardHeight = 1000
+boardHeight = 1080
 
 window :: Display
 window = InWindow "Haskeroids" (boardWidth, boardHeight) (10, 10)
@@ -24,20 +25,24 @@ shipColor :: Color
 shipColor = white
 
 data HaskeroidsGame =  Game { 
-  keys :: S.Set Key
-  ,shipCoords :: (Float, Float)
+  shipCoords :: (Float, Float)
   ,shipVel :: (Float, Float)
   ,shipRot :: Float
   ,playerLives :: Int
+  ,acc :: Bool
+  ,turnLeft :: Bool
+  ,turnRight :: Bool
 } deriving (Show)
 
 render :: HaskeroidsGame -> Picture
 render game =
   pictures [
-    ship
+    ship,
+    debugtext
   ]
   where
-    ship = uncurry translate (shipCoords game) $ color shipColor $ rectangleSolid 10 40
+    ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color shipColor $ rectangleSolid 10 40
+    debugtext = color white $ text $ (show (shipCoords game))
 
 moveShip :: Float -> HaskeroidsGame -> HaskeroidsGame
 moveShip secs game = game {shipCoords = checkPos (x',y')}
@@ -47,36 +52,47 @@ moveShip secs game = game {shipCoords = checkPos (x',y')}
     x' = (x + vx) * secs 
     y' = (y + vy) * secs
     checkPos :: (Float, Float) -> (Float, Float)
-    checkPos (x, y)
-      | x > (fromIntegral boardWidth) = checkPos ((x - (fromIntegral boardWidth)), y)
-      | y > (fromIntegral boardHeight) = (x, y - (fromIntegral boardHeight))
-      | otherwise = (x, y)
+    checkPos (x, y) = ((x `mod'` (fromIntegral boardWidth)),(y `mod'` (fromIntegral boardHeight))) 
 
 initialState :: HaskeroidsGame
 initialState = Game {
-  keys = S.empty
-  ,shipCoords = (0, 0)
+  shipCoords = (0, 0)
   ,shipVel = (0, 0)
   ,shipRot = 0
   ,playerLives = 2
+  ,acc = False
+  ,turnLeft = False
+  ,turnRight = False
 }
 
 accAmount :: Float
-accAmount = 100.0
+accAmount = 15.0
+
+rotAmount :: Float
+rotAmount = 7.0
+
+fromDeg :: Float -> Float
+fromDeg = (/180) . (*pi)
 
 accShip :: (Float, Float) -> Float -> (Float, Float)
-accShip (x, y) r = (x + accAmount * (cos r), y + accAmount * (sin r))
+accShip (x, y) r = (x + accAmount * (sin (fromDeg r)), y + accAmount * (cos (fromDeg r)))
 
 update :: Float -> HaskeroidsGame -> HaskeroidsGame
 update secs game
-  | S.member (SpecialKey KeyUp) (keys game) = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game) }
-  | S.member (SpecialKey KeyLeft) (keys game) = moveShip secs $ game { shipRot = (shipRot game) - 2 }
-  | S.member (SpecialKey KeyRight) (keys game) = moveShip secs $ game { shipRot = (shipRot game) + 2}
-  | otherwise = moveShip secs $ game
+  | (acc game) && (turnLeft game) = game { shipCoords = accShip (shipCoords game) (shipRot game), shipRot = (((shipRot game)-rotAmount) `mod'` 360)}
+  | (acc game) && (turnRight game) = game { shipCoords = accShip (shipCoords game) (shipRot game), shipRot = (((shipRot game)+rotAmount) `mod'` 360)}
+  | acc game = game { shipCoords = accShip (shipCoords game) (shipRot game)}
+  | turnLeft game = game { shipRot = (((shipRot game)-rotAmount) `mod'` 360) }
+  | turnRight game = game { shipRot = (((shipRot game)+rotAmount) `mod'` 360) }
+  | otherwise = game
 
 handleKeys :: Event -> HaskeroidsGame -> HaskeroidsGame
-handleKeys (EventKey k Down _ _) game = game { keys = S.insert k (keys game)}
-handleKeys (EventKey k Up _ _) game = game { keys = S.delete k (keys game)}
+handleKeys (EventKey (SpecialKey KeyUp) Down _ _) game = game {acc = True }
+handleKeys (EventKey (SpecialKey KeyUp) Up _ _) game = game {acc = False}
+handleKeys (EventKey (SpecialKey KeyLeft) Down _ _) game = game {turnLeft = True }
+handleKeys (EventKey (SpecialKey KeyLeft) Up _ _) game = game {turnLeft = False}
+handleKeys (EventKey (SpecialKey KeyRight) Down _ _) game = game {turnRight = True }
+handleKeys (EventKey (SpecialKey KeyRight) Up _ _) game = game {turnRight = False}
 handleKeys _ game = game
 
 
