@@ -61,7 +61,6 @@ render game =
   ]
   where
     ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color shipColor $ shipModel game
---    ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color shipColor $ rectangleSolid 10 40
 --    debugtext = color white $ text $ (show $ shipCoords game)
 
 moveShip :: Float -> HaskeroidsGame -> HaskeroidsGame
@@ -100,18 +99,16 @@ fromDeg :: Float -> Float
 fromDeg = (/180) . (*pi)
 
 accShip :: (Float, Float) -> Float -> (Float, Float)
-accShip (x, y) r = (x + accAmount * (sin (fromDeg r)), y + accAmount * (cos (fromDeg r)))
+accShip (dx, dy) r = (dx + accAmount * (sin (fromDeg r)), dy + accAmount * (cos (fromDeg r)))
 
+modifyGameIf :: (HaskeroidsGame -> Bool) -> (HaskeroidsGame -> HaskeroidsGame) -> HaskeroidsGame -> HaskeroidsGame
+modifyGameIf pred mod game = if pred game then mod game else game
 
---TODO: Move ship movement logic out of "update"
 update :: Float -> HaskeroidsGame -> HaskeroidsGame
-update secs game
-  | (acc game) && (turnLeft game) = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game), shipRot = (((shipRot game)-rotAmount) `mod'` 360)}
-  | (acc game) && (turnRight game) = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game), shipRot = (((shipRot game)+rotAmount) `mod'` 360)}
-  | acc game = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game)}
-  | turnLeft game = moveShip secs $ game { shipRot = (((shipRot game)-rotAmount) `mod'` 360) }
-  | turnRight game = moveShip secs $ game { shipRot = (((shipRot game)+rotAmount) `mod'` 360) }
-  | otherwise = moveShip secs $ game
+update secs = moveShip secs . modifyGameIf acc doAcc . modifyGameIf turnLeft doTurnLeft . modifyGameIf turnRight doTurnRight
+  where doAcc game       = game { shipVel = accShip (shipVel game) (shipRot game)}
+        doTurnLeft game  = game { shipRot = shipRot game - rotAmount }
+        doTurnRight game = game { shipRot = shipRot game + rotAmount }
 
 handleKeys :: Event -> HaskeroidsGame -> HaskeroidsGame
 handleKeys (EventKey (SpecialKey KeyUp) Down _ _) game = game {acc = True }
