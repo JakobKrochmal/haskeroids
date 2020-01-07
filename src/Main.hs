@@ -37,22 +37,27 @@ data HaskeroidsGame =  Game {
 render :: HaskeroidsGame -> Picture
 render game =
   pictures [
-    ship,
-    debugtext
+    ship
+--    debugtext
   ]
   where
     ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color shipColor $ rectangleSolid 10 40
-    debugtext = color white $ text $ (show (shipCoords game))
+--    debugtext = color white $ text $ (show $ shipCoords game)
 
 moveShip :: Float -> HaskeroidsGame -> HaskeroidsGame
-moveShip secs game = game {shipCoords = (x',y')}
+moveShip secs game = game {shipCoords = checkPos (x',y')}
   where
     (x, y) = shipCoords game -- Old coordinates
     (vx, vy) = shipVel game -- Speed of ship
     x' = x + vx * secs 
     y' = y + vy * secs
     checkPos :: (Float, Float) -> (Float, Float)
-    checkPos (x, y) = ((x `mod'` (fromIntegral boardWidth)),(y `mod'` (fromIntegral boardHeight))) 
+    checkPos (x, y)
+      | x > fromIntegral (boardWidth `div` 2) = checkPos (fromIntegral (-boardWidth `div` 2), y)
+      | x < fromIntegral (-(boardWidth `div` 2)) = checkPos (fromIntegral (boardWidth `div` 2), y)
+      | y > fromIntegral (boardHeight `div` 2) = checkPos (x, fromIntegral (-boardHeight `div` 2))
+      | y < fromIntegral (-(boardHeight `div` 2)) = checkPos (x, fromIntegral (boardHeight `div` 2))
+      | otherwise = (x, y)
 
 initialState :: HaskeroidsGame
 initialState = Game {
@@ -77,6 +82,8 @@ fromDeg = (/180) . (*pi)
 accShip :: (Float, Float) -> Float -> (Float, Float)
 accShip (x, y) r = (x + accAmount * (sin (fromDeg r)), y + accAmount * (cos (fromDeg r)))
 
+
+--TODO: Move ship movement logic out of "update"
 update :: Float -> HaskeroidsGame -> HaskeroidsGame
 update secs game
   | (acc game) && (turnLeft game) = moveShip secs $ game { shipVel = accShip (shipVel game) (shipRot game), shipRot = (((shipRot game)-rotAmount) `mod'` 360)}
