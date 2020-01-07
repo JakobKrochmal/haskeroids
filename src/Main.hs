@@ -34,6 +34,25 @@ data HaskeroidsGame =  Game {
   ,turnRight :: Bool
 } deriving (Show)
 
+shipModel :: HaskeroidsGame -> Picture
+shipModel game
+  | acc game = pictures [
+    (line [(0, (shL / 2)), (-(shW / 2), -(shL / 2))])
+    ,(line [(0, (shL / 2)),((shW / 2), -(shL / 2))])
+    ,(line [(-joint,-(shL / 3)),(joint,-(shL / 3))])
+    ,(color white $ polygon [(-(shW / 5), -(shL / 2)), ((shW / 5), -(shL / 2)), (0, -(shL / 1.3))])]
+  | otherwise = pictures [
+    (line [(0, (shL / 2)), (-(shW / 2), -(shL / 2))])
+    ,(line [(0, (shL / 2)),((shW / 2), -(shL / 2))])
+    ,(line [(-joint,-(shL / 3)),(joint,-(shL / 3))])]
+  where
+    shW :: Float
+    shW = 16
+    shL :: Float
+    shL = 24
+    joint :: Float
+    joint = shW/3
+
 render :: HaskeroidsGame -> Picture
 render game =
   pictures [
@@ -41,7 +60,8 @@ render game =
 --    debugtext
   ]
   where
-    ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color shipColor $ rectangleSolid 10 40
+    ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color shipColor $ shipModel game
+--    ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color shipColor $ rectangleSolid 10 40
 --    debugtext = color white $ text $ (show $ shipCoords game)
 
 moveShip :: Float -> HaskeroidsGame -> HaskeroidsGame
