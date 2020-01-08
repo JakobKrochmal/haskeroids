@@ -8,6 +8,15 @@ import Data.Fixed
 
 --TODO: Look into moving logic out into own modules
 
+asteroidScale :: Float
+asteroidScale = 3.5
+
+asteroidModel :: Asteroid -> Picture
+asteroidModel a = color gameColor $ line $ map (tupMul asteroidScale) [(0, 20), (14, 14), (9, 8), (11, -4), (6, -14), (0, -13), (-6, -6), (-11, 0), (-14, 6), (-7, 12), (-11, 17), (0,20)] 
+  where
+    tupMul :: Float -> Point -> Point
+    tupMul r (x, y) = (r*x, r*y)
+
 shipModel :: HaskeroidsGame -> Picture
 shipModel game
   | acc game = pictures [
@@ -49,6 +58,7 @@ data Asteroid = Asteroid {
   coords :: Point
   ,vel :: Vector
   ,size :: Int
+  ,rot :: Float
 } deriving (Show)
 
 -- TODO: Make the ship its own type so that it can be used to draw lives and prettify code
@@ -62,6 +72,7 @@ data HaskeroidsGame =  Game {
   ,turnLeft :: Bool
   ,turnRight :: Bool
   ,timePlayed :: Float
+  ,toSpawn :: Int
 } deriving (Show)
 
 initialState :: HaskeroidsGame
@@ -69,12 +80,13 @@ initialState = Game {
   shipCoords = (0, 0)
   ,shipVel = (0, 0)
   ,shipRot = 0
-  ,asteroids = [(Asteroid (-250, -250) (30, 30) 3), (Asteroid (150, 150) (4, -45) 2), (Asteroid (410, -200) (-200, 20) 1)]
+  ,asteroids = [(Asteroid (-250, -250) (30, 30) 3 4.0), (Asteroid (150, 150) (4, -45) 2 211.0), (Asteroid (410, -200) (-200, 20) 1 91.1)]
   ,playerLives = 2
   ,acc = False
   ,turnLeft = False
   ,turnRight = False
   ,timePlayed = 0
+  ,toSpawn = 4
 }
 
 render :: HaskeroidsGame -> Picture
@@ -90,10 +102,10 @@ render game =
 --    debugtext = color white $ text $ (show $ shipCoords game)
 
 roidToPic :: Asteroid -> Picture
-roidToPic asteroid = uncurry translate (coords asteroid) $ color gameColor $ circle (10*(fromIntegral (size asteroid)))
+roidToPic asteroid = uncurry translate (coords asteroid) $ rotate (rot asteroid) $ asteroidModel asteroid
 
 moveAst :: Float -> Asteroid -> Asteroid
-moveAst secs a = a {coords = checkPos (x', y')}
+moveAst secs a = a {coords = checkPos (x', y'), rot = 0.5 + rot a}
   where
     (x, y) = coords a
     (vx, vy) = vel a
