@@ -7,15 +7,8 @@ import qualified Data.Set as S
 import Data.Fixed
 
 --TODO: Look into moving logic out into own modules
+import Asteroid
 
-asteroidScale :: Float
-asteroidScale = 3.5
-
-asteroidModel :: Asteroid -> Picture
-asteroidModel a = color gameColor $ line $ map (tupMul asteroidScale) [(0, 20), (14, 14), (9, 8), (11, -4), (6, -14), (0, -13), (-6, -6), (-11, 0), (-14, 6), (-7, 12), (-11, 17), (0,20)] 
-  where
-    tupMul :: Float -> Point -> Point
-    tupMul r (x, y) = (r*x, r*y)
 
 shipModel :: HaskeroidsGame -> Picture
 shipModel game
@@ -54,12 +47,7 @@ background = black
 gameColor :: Color
 gameColor = green
 
-data Asteroid = Asteroid {
-  coords :: Point
-  ,vel :: Vector
-  ,size :: Int
-  ,rot :: Float
-} deriving (Show)
+
 
 -- TODO: Make the ship its own type so that it can be used to draw lives and prettify code
 data HaskeroidsGame =  Game { 
@@ -91,13 +79,13 @@ initialState = Game {
 
 render :: HaskeroidsGame -> Picture
 render game =
-  pictures [
+  pictures $ map (color gameColor) [
     ship,
     stones
 --    debugtext
   ]
   where
-    ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ color gameColor $ shipModel game
+    ship = uncurry translate (shipCoords game) $ rotate (shipRot game) $ shipModel game
     stones = pictures $ map roidToPic $ asteroids game
 --    debugtext = color white $ text $ (show $ shipCoords game)
 
