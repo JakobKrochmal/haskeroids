@@ -9,6 +9,7 @@ data Entity = Entity {
 
 type Ship = Entity
 type Asteroid = Entity
+type Bullet = Entity
 
 shipModel :: Bool -> Ship -> Picture
 shipModel accing ship
@@ -29,15 +30,23 @@ shipModel accing ship
     joint :: Float
     joint = shW/3
 
+drawShip :: Bool -> Ship -> Picture
+drawShip acc ship = uncurry translate (coords ship) $ rotate (rot ship) $ shipModel acc ship
+
+drawBullet :: Bullet -> Picture
+drawBullet bullet = uncurry translate (coords bullet) $ circle 1.0
+
 accShip :: Float -> Ship -> Ship
 accShip amount ship = ship { vel = (dx + amount * (sin (fromDeg r)), dy + amount * (cos (fromDeg r)))}
   where
     dx = fst $ vel ship
     dy = snd $ vel ship
     r = rot ship
-    fromDeg :: Float -> Float
-    fromDeg = (/180) . (*pi)
 
+fromDeg :: Float -> Float
+fromDeg = (/180) . (*pi)
+
+-- TODO: Implement the 'scale' function from Gloss instead of doing it from scratch
 asteroidScale :: Float
 asteroidScale = 3.5
 
@@ -47,12 +56,6 @@ asteroidModel a = line $ map (tupMul asteroidScale) [(0, 20), (14, 14), (9, 8), 
     tupMul :: Float -> Point -> Point
     tupMul r (x, y) = (r*x, r*y)
 
-roidToPic :: Asteroid -> Picture
-roidToPic asteroid = uncurry translate (coords asteroid) $ rotate (rot asteroid) $ asteroidModel asteroid
+drawAsteroid :: Asteroid -> Picture
+drawAsteroid asteroid = uncurry translate (coords asteroid) $ rotate (rot asteroid) $ asteroidModel asteroid
 
-moveAst :: Float -> Asteroid -> Asteroid
-moveAst secs a = a {coords = (x', y'), rot = 0.5 + rot a}
-  where
-    (x, y) = coords a
-    (vx, vy) = vel a
-    (x', y') = ((x + vx * secs), (y + vy * secs))

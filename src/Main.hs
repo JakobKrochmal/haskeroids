@@ -24,6 +24,7 @@ initialState :: HaskeroidsGame
 initialState = Game {
   ship = Entity (0.0, 0.0) (0.0, 0.0) 0.0 
   ,asteroids = [(Entity (-250, -250) (30, 30) 3.0), (Entity (150, 150) (4, -45) 2.0), (Entity (410, -200) (-200, 20) 1.0)]
+  ,bullets = []
   ,playerLives = 2
   ,accInput = False
   ,turnLeftInput = False

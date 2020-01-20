@@ -8,6 +8,7 @@ import Entity
 data HaskeroidsGame =  Game { 
   ship :: Ship
   ,asteroids :: [Asteroid]
+  ,bullets :: [Bullet]
   ,playerLives :: Int
   ,accInput :: Bool
   ,turnLeftInput :: Bool
@@ -25,12 +26,13 @@ render :: HaskeroidsGame -> Picture
 render game =
   pictures $ map (Color $ gameColor game) [
     boat,
-    stones
+    stones,
+    pews
   ]
   where
-    boat = uncurry translate (coords $ ship game) $ rotate (rot $ ship game) $ shipModel (accInput game) $ ship game
-    stones = pictures $ map roidToPic $ asteroids game
-
+    boat = drawShip (accInput game) (ship game)
+    stones = pictures $ map drawAsteroid $ asteroids game
+    pews = pictures $ map drawBullet $ bullets game
 
 move :: Int -> Int -> Float -> Entity -> Entity
 move width height secs ent = ent {coords = checkPos width height (x', y')}
@@ -57,8 +59,12 @@ rotShipRight amount ship = ship {rot = (rot ship) + amount}
 
 -------
 
+
+spawnBullet :: HaskeroidsGame -> HaskeroidsGame
+spawnBullet game = game {bullets = (Entity (coords $ ship game) (800.0 * (sin (fromDeg $ rot $ ship game)),800.0 * (cos (fromDeg $ rot $ ship game))) (rot $ ship game)) : (bullets game)} 
+
 moveEnts :: Float -> HaskeroidsGame -> HaskeroidsGame
-moveEnts secs game = game {ship = move w h secs s, asteroids = map (move w h secs) (asteroids game)}
+moveEnts secs game = game {ship = move w h secs s, asteroids = map (move w h secs) (asteroids game), bullets = map (move w h secs) (bullets game)}
   where
     w = boardWidth game
     h = boardHeight game
@@ -80,4 +86,5 @@ handleKeys (EventKey (SpecialKey KeyLeft) Down _ _) game = game {turnLeftInput =
 handleKeys (EventKey (SpecialKey KeyLeft) Up _ _) game = game {turnLeftInput = False}
 handleKeys (EventKey (SpecialKey KeyRight) Down _ _) game = game {turnRightInput = True }
 handleKeys (EventKey (SpecialKey KeyRight) Up _ _) game = game {turnRightInput = False}
+handleKeys (EventKey (SpecialKey KeySpace) Down _ _) game = spawnBullet game
 handleKeys _ game = game
