@@ -1,5 +1,8 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Entity where
 import Graphics.Gloss
+import Control.Lens
 
 data Entity = Entity {
   coords :: Point
