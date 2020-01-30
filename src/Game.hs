@@ -50,21 +50,29 @@ checkPos boardWidth boardHeight (x, y)
       | y < fromIntegral (-(boardHeight `div` 2)) = checkPos boardWidth boardHeight (x, fromIntegral (boardHeight `div` 2))
       | otherwise = (x, y)
 
--- TODO: Do this with lenses or fmap instead
 rotShipLeft :: Float -> Ship -> Ship
 rotShipLeft amount ship = ship { rot = (rot ship) - amount}
 
 rotShipRight :: Float -> Ship -> Ship
 rotShipRight amount ship = ship {rot = (rot ship) + amount}
 
--------
-
+moveBullet :: Int -> Int -> Float -> Bullet -> Bullet
+moveBullet w h secs b = Bullet {spatial = move w h secs (spatial b), timeLived = (timeLived b) + secs}
 
 spawnBullet :: HaskeroidsGame -> HaskeroidsGame
-spawnBullet game = game {bullets = (Entity (coords $ ship game) (800.0 * (sin (fromDeg $ rot $ ship game)),800.0 * (cos (fromDeg $ rot $ ship game))) (rot $ ship game)) : (bullets game)} 
+spawnBullet game = game {bullets = (Bullet (Entity (coords $ ship game) (800.0 * (sin (fromDeg $ rot $ ship game)),800.0 * (cos (fromDeg $ rot $ ship game))) (rot $ ship game)) 0.0) : (bullets game)} 
+
+despawnBullets :: HaskeroidsGame -> HaskeroidsGame
+despawnBullets g = g {bullets = destroyBullets $ bullets g}
+  where
+    destroyBullets :: [Bullet] -> [Bullet]
+    destroyBullets [] = []
+    destroyBullets (b:bs)
+      | timeLived b > 4.0 = destroyBullets bs
+      | otherwise = b : (destroyBullets bs)
 
 moveEnts :: Float -> HaskeroidsGame -> HaskeroidsGame
-moveEnts secs game = game {ship = move w h secs s, asteroids = map (move w h secs) (asteroids game), bullets = map (move w h secs) (bullets game)}
+moveEnts secs game = game {ship = move w h secs s, asteroids = map (move w h secs) (asteroids game), bullets = map (moveBullet w h secs) (bullets game)}
   where
     w = boardWidth game
     h = boardHeight game
@@ -74,7 +82,7 @@ modifyGameIf :: (HaskeroidsGame -> Bool) -> (HaskeroidsGame -> HaskeroidsGame) -
 modifyGameIf pred mod game = if pred game then mod game else game
 
 update :: Float -> HaskeroidsGame -> HaskeroidsGame
-update secs = moveEnts secs . modifyGameIf accInput doAcc . modifyGameIf turnLeftInput doTurnLeft . modifyGameIf turnRightInput doTurnRight
+update secs = moveEnts secs . despawnBullets . modifyGameIf accInput doAcc . modifyGameIf turnLeftInput doTurnLeft . modifyGameIf turnRightInput doTurnRight
   where doTurnLeft game       = game { ship = rotShipLeft (rotAmount game) (ship game) }
         doTurnRight game  = game { ship = rotShipRight (rotAmount game) (ship game) }
         doAcc game = game { ship = accShip (accAmount game) (ship game) }

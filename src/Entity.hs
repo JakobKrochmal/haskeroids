@@ -1,8 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Entity where
 import Graphics.Gloss
-import Control.Lens
 
 data Entity = Entity {
   coords :: Point
@@ -10,9 +7,13 @@ data Entity = Entity {
   ,rot :: Float
 }
 
+data Bullet = Bullet {
+  spatial :: Entity
+  ,timeLived :: Float
+}
+
 type Ship = Entity
 type Asteroid = Entity
-type Bullet = Entity
 
 shipModel :: Bool -> Ship -> Picture
 shipModel accing ship
@@ -37,7 +38,7 @@ drawShip :: Bool -> Ship -> Picture
 drawShip acc ship = uncurry translate (coords ship) $ rotate (rot ship) $ shipModel acc ship
 
 drawBullet :: Bullet -> Picture
-drawBullet bullet = uncurry translate (coords bullet) $ circle 1.0
+drawBullet bullet = uncurry translate (coords $ spatial bullet) $ circle 1.0
 
 accShip :: Float -> Ship -> Ship
 accShip amount ship = ship { vel = (dx + amount * (sin (fromDeg r)), dy + amount * (cos (fromDeg r)))}
